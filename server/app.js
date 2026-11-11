@@ -40,6 +40,11 @@ app.use("/api/units", unitRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/reports", reportRoutes);
 
+const portalRoutes = require("./routes/portalRoutes");
+// ...
+app.use("/api/reports", reportRoutes);
+app.use("/api", portalRoutes);
+
 app.use((err, req, res, next) => {
   console.error(err);
   res.status(500).json({
