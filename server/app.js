@@ -10,6 +10,7 @@ const requestRoutes = require("./routes/requestRoutes");
 const unitRoutes = require("./routes/unitRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const reportRoutes = require("./routes/reportRoutes");
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 
@@ -44,6 +45,7 @@ const portalRoutes = require("./routes/portalRoutes");
 // ...
 app.use("/api/reports", reportRoutes);
 app.use("/api", portalRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);
