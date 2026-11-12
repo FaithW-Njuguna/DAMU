@@ -1,5 +1,5 @@
 import { Navigate, NavLink, Link, Outlet, Route, Routes, useLocation } from "react-router-dom";
-import { Building2, ClipboardList, Droplet, HeartPulse, Home, LayoutDashboard, LogOut, Search, ShieldAlert, Siren } from "lucide-react";
+import { Building2, ClipboardList, Droplet, HeartPulse, Home, LayoutDashboard, LogOut, Search, ShieldAlert, Siren, UserCog } from "lucide-react";
 import { homeFor, useAuth } from "./auth";
 import { Landing, Login, Register, Track, Dashboard, Report } from "./pages/Public";
 import Donor from "./pages/Donor";
