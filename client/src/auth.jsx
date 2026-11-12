@@ -5,7 +5,7 @@ import { api, session, setAuthFailHandler } from "./api";
 const Ctx = createContext(null);
 export const useAuth = () => useContext(Ctx);
 export const homeFor = (role) =>
-  ({ donor: "/donor", patient: "/requests", hospital: "/hospital", regulator: "/regulator", admin: "/regulator" }[role] || "/");
+  ({ donor: "/donor", patient: "/requests", hospital: "/hospital", regulator: "/regulator", admin: "/admin" }[role] || "/");
 
 export function AuthProvider({ children }) {
   const navigate = useNavigate();

@@ -6,6 +6,8 @@ import Donor from "./pages/Donor";
 import Requests from "./pages/Requests";
 import Hospital from "./pages/Hospital";
 import Regulator from "./pages/Regulator";
+import Admin from "./pages/Admin";
+import { ThemeToggle } from "./theme";
 
 const ROLE_NAV = {
   donor: [["/donor", "My donations", HeartPulse]],
@@ -13,7 +15,7 @@ const ROLE_NAV = {
   hospital: [["/hospital", "Unit tracking", Building2], ["/requests", "Blood requests", ClipboardList]],
   regulator: [["/regulator", "Review queue", ShieldAlert]]
 };
-ROLE_NAV.admin = ROLE_NAV.regulator;
+ROLE_NAV.admin = [["/admin", "Administration", UserCog], ...ROLE_NAV.regulator];
 const PUBLIC_NAV = [["/dashboard", "Dashboard", LayoutDashboard], ["/track", "Track a unit", Search], ["/report", "Report a concern", Siren]];
 
 const Logo = () => <Link to="/" className="logo"><Droplet size={24} fill="currentColor" />DAMU</Link>;
@@ -26,14 +28,14 @@ function Layout() {
   return (
     <div className={`app${user ? " authed" : ""}`}>
       <aside className="side" aria-label="Main navigation">
-        <Logo /><Links items={own} /><Links items={PUBLIC_NAV} /><div className="sp" />
+        <Logo /><Links items={own} /><Links items={PUBLIC_NAV} /><div className="sp" /><ThemeToggle />
         <div className="me">{user?.full_name}<br />{user?.role}</div>
         <button className="nl" onClick={logout}><LogOut size={18} />Log out</button>
       </aside>
       <div>
         <header className="top">
           <Logo />
-          <nav className="tl" aria-label="Public pages">{!user && <Links items={PUBLIC_NAV} />}</nav>
+          <nav className="tl" aria-label="Public pages">{!user && <Links items={PUBLIC_NAV} />}</nav><ThemeToggle compact />
           {user ? <button className="btn ghost sm" onClick={logout}><LogOut size={16} />Log out</button>
             : <div className="row" style={{ gap: 8 }}><Link className="btn ghost sm" to="/login">Log in</Link><Link className="btn primary sm" to="/register">Register</Link></div>}
         </header>
@@ -71,6 +73,7 @@ export default function App() {
         <Route path="/donor" element={g(["donor"], <Donor />)} />
         <Route path="/requests" element={g(["patient", "hospital"], <Requests />)} />
         <Route path="/hospital" element={g(["hospital"], <Hospital />)} />
+        <Route path="/admin" element={g(["admin"], <Admin />)} />
         <Route path="/regulator" element={g(["regulator", "admin"], <Regulator />)} />
         <Route path="*" element={<div className="card"><h3>Page not found</h3><p className="mute">That page doesn't exist. <Link to="/">Go home</Link></p></div>} />
       </Route>

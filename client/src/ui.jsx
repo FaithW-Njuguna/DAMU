@@ -46,8 +46,8 @@ export function useFetch(path, enabled = true) {
   return { ...s, reload: load };
 }
 
-export const Button = ({ busy, variant = "primary", children, ...p }) => (
-  <button className={`btn ${variant}`} {...p} disabled={busy || p.disabled}>
+export const Button = ({ busy, variant = "primary", className = "", children, ...p }) => (
+  <button {...p} className={`btn ${variant} ${className}`.trim()} disabled={busy || p.disabled}>
     {busy && <Loader2 className="spin" size={16} />}{children}
   </button>
 );

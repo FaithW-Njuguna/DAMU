@@ -1,18 +1,15 @@
-// server/routes/adminRoutes.js
-const express = require('express');
+const express = require("express");
+const c = require("../controllers/adminController");
+const { authenticateToken, authorizeRoles } = require("../middleware/authMiddleware");
+
 const router = express.Router();
-const adminController = require('../controllers/adminController');
-const authMiddleware = require('../middleware/authMiddleware');
+router.use(authenticateToken, authorizeRoles("admin"));
 
-// Middleware to ensure the requester is specifically an admin
-const verifyAdmin = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') {
-    return next();
-  }
-  return res.status(403).json({ error: 'Access denied. Administrator privileges required.' });
-};
-
-// POST route: /api/admin/create-user
-router.post('/create-user', authMiddleware, verifyAdmin, adminController.createUserAccount);
+router.get("/hospitals", c.listHospitals);
+router.post("/hospitals", c.createHospital);
+router.patch("/hospitals/:id/verify", c.setHospitalVerified);
+router.get("/users", c.listUsers);
+router.post("/users", c.createUser);
+router.post("/create-user", c.createUser); // kept for the earlier route name
 
 module.exports = router;

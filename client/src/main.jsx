@@ -5,13 +5,17 @@ import "./styles.css";
 import App from "./App.jsx";
 import { AuthProvider } from "./auth.jsx";
 import { ToastProvider } from "./ui.jsx";
+import "./theme.css";
+import { ThemeProvider } from "./theme.jsx";
 
 createRoot(document.getElementById("root")).render(
   <BrowserRouter>
-    <ToastProvider>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
-    </ToastProvider>
+    <ThemeProvider>
+      <ToastProvider>
+        <AuthProvider>
+         <App />
+       </AuthProvider>
+     </ToastProvider>
+    </ThemeProvider>
   </BrowserRouter>
 );

@@ -1,0 +1,15 @@
+:root[data-theme="dark"]{color-scheme:dark;--bg:#12100f;--card:#1c1917;--ink:#f5f5f4;--mute:#a8a29e;--line:#2e2a27;--brand:#dc2626;--brand-d:#b91c1c;--brand-l:#3b1514;--ok:#4ade80;--bad:#f87171;--sh:0 1px 2px #0006,0 6px 16px #0004}
+[data-theme="dark"] a{color:#fca5a5}
+[data-theme="dark"] .top,[data-theme="dark"] .side,[data-theme="dark"] .tabbar,[data-theme="dark"] .dlg,[data-theme="dark"] .toast,[data-theme="dark"] .btn.ghost,[data-theme="dark"] .field input,[data-theme="dark"] .field select,[data-theme="dark"] .field textarea{background:var(--card);color:var(--ink)}
+[data-theme="dark"] .field input,[data-theme="dark"] .field select,[data-theme="dark"] .field textarea,[data-theme="dark"] .btn.ghost{border-color:#44403c}
+[data-theme="dark"] .field.has-error input,[data-theme="dark"] .field.has-error select,[data-theme="dark"] .field.has-error textarea{background:#2a1513}
+[data-theme="dark"] .btn.ghost:hover:not(:disabled),[data-theme="dark"] .nl:hover{background:#292524}
+[data-theme="dark"] .btn.on{background:var(--brand-l);color:#fecaca;border-color:var(--brand)}
+[data-theme="dark"] .nl.active{color:#fecaca}
+[data-theme="dark"] .code,[data-theme="dark"] .bar,[data-theme="dark"] .badge{background:#292524;color:#d6d3d1}
+[data-theme="dark"] .badge.ok{background:#14532d;color:#bbf7d0}[data-theme="dark"] .badge.warn{background:#713f12;color:#fde68a}
+[data-theme="dark"] .badge.info{background:#1e3a8a;color:#bfdbfe}[data-theme="dark"] .badge.bad{background:#7f1d1d;color:#fecaca}
+[data-theme="dark"] .alert{background:#2a1513;border-color:#7f1d1d;color:#fecaca}[data-theme="dark"] .alert.info{background:#172554;border-color:#1e40af;color:#bfdbfe}
+[data-theme="dark"] .sk{background:linear-gradient(90deg,#292524,#35302d,#292524);background-size:200% 100%}
+[data-theme="dark"] .empty svg{color:#57534e}[data-theme="dark"] .scrim{background:#000a}
+body,.card,.top,.side,.tabbar{transition:background-color .2s,color .2s,border-color .2s}
