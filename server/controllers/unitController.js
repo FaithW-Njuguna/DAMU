@@ -177,7 +177,8 @@ const getUnitByTrackingCode = async (req, res) => {
     const result = await pool.query(
       `SELECT tracking_code, status, collection_date
        FROM blood_units
-       WHERE tracking_code = $1`,
+       WHERE tracking_code = $1
+       OR match_id IN (SELECT match_id FROM matches WHERE tracking_code = $1)`,
       [code]
     );
 
