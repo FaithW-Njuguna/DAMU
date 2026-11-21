@@ -1,1 +1,0 @@
-ALTER TABLE users ADD COLUMN IF NOT EXISTS hospital_id UUID REFERENCES hospitals(hospital_id);
