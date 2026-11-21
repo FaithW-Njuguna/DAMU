@@ -22,7 +22,7 @@ export default function Hospital() {
     try { await fn(); toast(ok); matches.reload(); units.reload(); } catch (e) { toast(e.message, "err"); }
     setBusy(""); setFlag(null);
   };
-  const collect = (m) => run(m.match_id, () => api("/units", { method: "POST", body: { match_id: m.match_id, hospital_id: user.hospital_id } }), "Collection logged");
+  const collect = (m) => run(m.match_id, () => api("/units", { method: "POST", body: { match_id: m.match_id} }), "Collection logged");
   const setStatus = (u, status) => run(u.unit_id + status, () => api(`/units/${u.unit_id}/status`, { method: "PATCH", body: { status } }), `Unit marked ${status}`);
 
   const rows = (units.data?.units || []).filter((u) => filter === "all" || u.status === filter);

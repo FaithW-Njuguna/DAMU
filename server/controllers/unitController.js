@@ -1,34 +1,50 @@
-
 const pool = require("../config/db");
 const crypto = require("crypto");
+const { isUUID } = require("../utils/validate");
 
+const fail = (res, status, message) => res.status(status).json({ message });
+
+// Hospital staff record that a confirmed donor's blood was collected.
+// The hospital always comes from the login token, never from the request body.
 const createUnit = async (req, res) => {
+  const { match_id } = req.body;
+  const hospitalId = req.user.hospital_id;
+
+  if (!hospitalId) {
+    return fail(res, 400, "Your account is not linked to a hospital");
+  }
+
+  if (!isUUID(match_id)) {
+    return fail(res, 400, "A confirmed match is required");
+  }
+
   const client = await pool.connect();
 
   try {
-    const { match_id, hospital_id } = req.body;
-
     await client.query("BEGIN");
 
     const matchResult = await client.query(
-      `SELECT m.*, d.donor_id
+      `SELECT m.match_id, m.status, m.donor_id,
+              r.hospital_id AS request_hospital_id
        FROM matches m
-       JOIN donors d ON d.donor_id = m.donor_id
+       JOIN blood_requests r ON r.request_id = m.request_id
        WHERE m.match_id = $1
-       FOR UPDATE`,
+       FOR UPDATE OF m`,
       [match_id]
     );
 
-    if (!matchResult.rowCount ||
-        matchResult.rows[0].status !== "confirmed") {
-      await client.query("ROLLBACK");
+    const match = matchResult.rows[0];
 
-      return res.status(400).json({
-        message: "A confirmed match is required"
-      });
+    if (!match || match.status !== "confirmed") {
+      await client.query("ROLLBACK");
+      return fail(res, 400, "A confirmed match is required");
     }
 
-    const match = matchResult.rows[0];
+    // A request addressed to one hospital can only be collected by that hospital.
+    if (match.request_hospital_id && match.request_hospital_id !== hospitalId) {
+      await client.query("ROLLBACK");
+      return fail(res, 403, "This donor was matched to a different hospital");
+    }
 
     const trackingCode =
       "UNIT-" + crypto.randomBytes(8).toString("hex").toUpperCase();
@@ -39,12 +55,7 @@ const createUnit = async (req, res) => {
         collection_date, status, tracking_code)
        VALUES ($1, $2, $3, CURRENT_DATE, 'collected', $4)
        RETURNING *`,
-      [
-        match_id,
-        match.donor_id,
-        hospital_id,
-        trackingCode
-      ]
+      [match_id, match.donor_id, hospitalId, trackingCode]
     );
 
     await client.query(
@@ -53,7 +64,7 @@ const createUnit = async (req, res) => {
        VALUES ($1, $2, $3, 'collected', $4)`,
       [
         result.rows[0].unit_id,
-        hospital_id,
+        hospitalId,
         req.user.user_id,
         "Unit collection recorded"
       ]
@@ -69,31 +80,45 @@ const createUnit = async (req, res) => {
   } catch (error) {
     await client.query("ROLLBACK");
 
-    console.error(error);
+    // uq_unit_match: this donation was already logged (for example a double click).
+    if (error.code === "23505") {
+      return fail(res, 409, "This donation has already been logged");
+    }
 
-    res.status(500).json({
-      message: "Could not create blood unit"
-    });
+    console.error(error);
+    fail(res, 500, "Could not create blood unit");
 
   } finally {
     client.release();
   }
 };
 
+const allowedTransitions = {
+  collected: ["received", "flagged"],
+  received: ["used", "flagged"],
+  used: [],
+  flagged: []
+};
+
 const updateUnitStatus = async (req, res) => {
+  const { unit_id } = req.params;
+  const { status } = req.body;
+  const notes =
+    typeof req.body.notes === "string"
+      ? req.body.notes.trim().slice(0, 1000)
+      : null;
+
+  if (!isUUID(unit_id)) {
+    return fail(res, 400, "Invalid unit");
+  }
+
+  if (!Object.keys(allowedTransitions).includes(status)) {
+    return fail(res, 400, "Invalid status");
+  }
+
   const client = await pool.connect();
 
   try {
-    const { unit_id } = req.params;
-    const { status, notes } = req.body;
-
-    const allowedTransitions = {
-      collected: ["received", "flagged"],
-      received: ["used", "flagged"],
-      used: [],
-      flagged: []
-    };
-
     await client.query("BEGIN");
 
     const result = await client.query(
@@ -105,28 +130,20 @@ const updateUnitStatus = async (req, res) => {
 
     if (!result.rowCount) {
       await client.query("ROLLBACK");
-
-      return res.status(404).json({
-        message: "Unit not found"
-      });
+      return fail(res, 404, "Unit not found");
     }
 
     const unit = result.rows[0];
 
-    if (!allowedTransitions[unit.status]?.includes(status)) {
-      await client.query("ROLLBACK");
-
-      return res.status(400).json({
-        message: "Invalid status transition"
-      });
-    }
-
+    // Check ownership first so one hospital learns nothing about another's units.
     if (unit.hospital_id !== req.user.hospital_id) {
       await client.query("ROLLBACK");
+      return fail(res, 403, "Hospital access mismatch");
+    }
 
-      return res.status(403).json({
-        message: "Hospital access mismatch"
-      });
+    if (!allowedTransitions[unit.status].includes(status)) {
+      await client.query("ROLLBACK");
+      return fail(res, 400, "Invalid status transition");
     }
 
     await client.query(
@@ -140,13 +157,7 @@ const updateUnitStatus = async (req, res) => {
       `INSERT INTO accountability_logs
        (unit_id, hospital_id, staff_id, action, notes)
        VALUES ($1, $2, $3, $4, $5)`,
-      [
-        unit_id,
-        unit.hospital_id,
-        req.user.user_id,
-        status,
-        notes || null
-      ]
+      [unit_id, unit.hospital_id, req.user.user_id, status, notes || null]
     );
 
     await client.query("COMMIT");
@@ -158,12 +169,8 @@ const updateUnitStatus = async (req, res) => {
 
   } catch (error) {
     await client.query("ROLLBACK");
-
     console.error(error);
-
-    res.status(500).json({
-      message: "Could not update unit"
-    });
+    fail(res, 500, "Could not update unit");
 
   } finally {
     client.release();
@@ -183,19 +190,14 @@ const getUnitByTrackingCode = async (req, res) => {
     );
 
     if (!result.rowCount) {
-      return res.status(404).json({
-        message: "Tracking code not found"
-      });
+      return fail(res, 404, "Tracking code not found");
     }
 
     res.json(result.rows[0]);
 
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      message: "Tracking lookup failed"
-    });
+    fail(res, 500, "Tracking lookup failed");
   }
 };
 
