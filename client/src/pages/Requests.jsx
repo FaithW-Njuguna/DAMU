@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api } from "../api";
 import { useAuth } from "../auth";
-import { BLOOD, Button, Card, DataState, Empty, Field, FilterSelect, FormAlert, PageHead, StatusBadge, Table, fmt, useFetch, useToast } from "../ui";
+import { BLOOD, Button, Card, Confirm, DataState, Empty, Field, FilterSelect, FormAlert, PageHead, StatusBadge, Table, fmt, useFetch, useToast } from "../ui";
 
 export default function Requests() {
   const { user } = useAuth();
@@ -13,6 +13,8 @@ export default function Requests() {
   const [formErr, setFormErr] = useState("");
   const [busy, setBusy] = useState(false);
   const [filter, setFilter] = useState("all");
+  const [ask, setAsk] = useState(null);
+  const [closing, setClosing] = useState(false);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
 
   const submit = async (e) => {
@@ -33,14 +35,31 @@ export default function Requests() {
     setBusy(false);
   };
 
+    const close = async () => {
+    setClosing(true);
+    try {
+      await api(`/requests/${ask.request.request_id}/status`, { method: "PATCH", body: { status: ask.status } });
+      toast(ask.status === "cancelled" ? "Request cancelled" : "Request marked fulfilled");
+      list.reload();
+    } catch (e) { toast(e.message, "err"); }
+    setClosing(false);
+    setAsk(null);
+  };
+
   const rows = (list.data?.requests || []).filter((r) => filter === "all" || r.status === filter);
   const cols = [
     { key: "need", label: "Need", render: (r) => `${r.blood_type}, ${r.units_required} unit${r.units_required > 1 ? "s" : ""}` },
     { key: "urgency", label: "Urgency", render: (r) => <StatusBadge value={r.urgency} /> },
     { key: "where", label: "Where", render: (r) => r.hospital_name || r.location },
     { key: "status", label: "Status", render: (r) => <StatusBadge value={r.status} /> },
-    { key: "donors", label: "Donors", render: (r) => `${r.donors_confirmed} confirmed / ${r.donors_notified} asked` },
-    { key: "created_at", label: "Posted", render: (r) => fmt(r.created_at) }
+        { key: "donors", label: "Donors", render: (r) => `${r.donors_confirmed} of ${r.units_required} confirmed, ${r.donors_notified} asked` },
+    { key: "created_at", label: "Posted", render: (r) => fmt(r.created_at) },
+    { key: "act", label: "Action", render: (r) => (
+      <span className="row" style={{ gap: 8 }}>
+        {["matching", "matched"].includes(r.status) && r.donors_confirmed > 0 && <Button className="sm" onClick={() => setAsk({ request: r, status: "fulfilled" })}>Mark fulfilled</Button>}
+        {["pending", "matching", "matched", "fulfilled", "cancelled"].includes(r.status) && <Button variant="ghost" className="sm" onClick={() => setAsk({ request: r, status: "cancelled" })}>Cancel</Button>}
+      </span>
+    ) }
   ];
   return (
     <div className="stack">
@@ -66,6 +85,11 @@ export default function Requests() {
           </>}
         </DataState>
       </Card>
+      <Confirm open={!!ask} busy={closing}
+        title={ask?.status === "cancelled" ? "Cancel this request?" : "Mark this request as fulfilled?"}
+        text={ask?.status === "cancelled" ? "Donors who were asked or confirmed will be told it is cancelled." : "Use this once the blood has been received. Donors who have not answered yet will be told the request is closed."}
+        confirmLabel={ask?.status === "cancelled" ? "Cancel request" : "Mark fulfilled"}
+        onConfirm={close} onCancel={() => setAsk(null)} />
     </div>
   );
 }

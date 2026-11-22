@@ -17,7 +17,8 @@ const getMyDonorProfile = async (req, res) => {
 const getMyMatches = async (req, res) => {
   const r = await pool.query(
     `SELECT m.match_id, m.status, m.tracking_code, m.created_at,
-            r.blood_type, r.units_required, r.urgency, r.location, h.name AS hospital_name
+                        r.blood_type, r.units_required, r.urgency, r.location, r.status AS request_status,
+            h.name AS hospital_name
      FROM matches m
      JOIN donors d ON d.donor_id = m.donor_id
      JOIN blood_requests r ON r.request_id = m.request_id
@@ -37,9 +38,10 @@ const getMyRequests = async (req, res) => {
             (SELECT COUNT(*)::int FROM matches m WHERE m.request_id = r.request_id AND m.status = 'confirmed') AS donors_confirmed
      FROM blood_requests r
      LEFT JOIN hospitals h ON h.hospital_id = r.hospital_id
-     WHERE r.requester_id = $1
+          WHERE r.requester_id = $1
+        OR ($2::uuid IS NOT NULL AND r.hospital_id = $2::uuid)
      ORDER BY r.created_at DESC`,
-    [req.user.user_id]
+    [req.user.user_id, req.user.hospital_id || null]
   );
   res.json({ requests: r.rows });
 };

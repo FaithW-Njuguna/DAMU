@@ -6,7 +6,7 @@ export const BLOOD = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 export const fmt = (d) => (d ? new Date(d).toLocaleString("en-KE", { dateStyle: "medium", timeStyle: "short" }) : "–");
 
 const TONE = { collected: "info", received: "warn", used: "ok", flagged: "bad", notified: "warn", confirmed: "ok", declined: "neutral",
-  matching: "warn", matched: "ok", pending: "neutral", fulfilled: "ok", cancelled: "neutral", normal: "neutral", urgent: "warn", critical: "bad" };
+  matching: "warn", matched: "ok", pending: "neutral", fulfilled: "ok", cancelled: "neutral", expired: "neutral", normal: "neutral", urgent: "warn", critical: "bad" };
 export const StatusBadge = ({ value }) => <Badge tone={TONE[value]}>{String(value).replace("_", " ")}</Badge>;
 export const Badge = ({ tone = "neutral", children }) => <span className={`badge ${tone}`}>{children}</span>;
 

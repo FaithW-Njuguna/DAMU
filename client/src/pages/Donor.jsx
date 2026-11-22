@@ -107,7 +107,7 @@ function Matches() {
         </>}
       </DataState>
       <Confirm open={!!ask} busy={busy} title={ask?.response === "confirm" ? "Confirm you can donate?" : "Decline this request?"}
-        text={ask?.response === "confirm" ? "The requester will be told a donor has confirmed, and you'll get a tracking code. Please only confirm if you are able to go to the hospital." : "We'll ask other donors instead."}
+        text={ask?.response === "confirm" ? "The requester will be told a donor has confirmed, and you'll get a tracking code. Please only confirm if you are able to go to the hospital." : "We'll ask the next compatible donor instead."}
         confirmLabel={ask?.response === "confirm" ? "Yes, I'll donate" : "Decline"} onConfirm={answer} onCancel={() => setAsk(null)} />
     </Card>
   );

@@ -2,7 +2,8 @@ const express = require("express");
 
 const {
   createRequest,
-  respondToMatch
+  respondToMatch,
+  updateRequestStatus
 } = require("../controllers/requestController");
 
 const {
@@ -24,6 +25,13 @@ router.post(
   authenticateToken,
   authorizeRoles("donor"),
   respondToMatch
+);
+
+router.patch(
+  "/:request_id/status",
+  authenticateToken,
+  authorizeRoles("patient", "hospital"),
+  updateRequestStatus
 );
 
 module.exports = router;
