@@ -37,8 +37,6 @@ function distanceKm(lat1, lon1, lat2, lon2) {
   return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// Donors who could answer this request: compatible group, available, past the
-// 56-day gap, and not already asked about this same request.
 async function findCandidates(db, request, limit = MATCH_BATCH_SIZE) {
   const compatibleTypes = getCompatibleBloodTypes(request.blood_type);
 
@@ -83,7 +81,6 @@ async function findCandidates(db, request, limit = MATCH_BATCH_SIZE) {
   return candidates.slice(0, limit);
 }
 
-// Asks up to `limit` more donors and returns how many were asked.
 async function matchRequest(db, request, limit = MATCH_BATCH_SIZE) {
   const donors = await findCandidates(db, request, limit);
 
@@ -98,7 +95,8 @@ async function matchRequest(db, request, limit = MATCH_BATCH_SIZE) {
     await notify(
       db,
       donor.user_id,
-      `A ${request.blood_type} blood request (${request.urgency}) near ${request.location} matches your blood group. Open DAMU to confirm or decline.`
+           `A ${request.blood_type} blood request (${request.urgency}) near ${request.location} matches your blood group. Open DAMU to confirm or decline.`,
+      { sms: true }
     );
   }
 

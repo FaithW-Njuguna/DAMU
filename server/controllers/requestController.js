@@ -6,7 +6,11 @@ const {
   matchRequest
 } = require("../services/matchingService");
 
-const { notify } = require("../services/notificationService");
+const {
+  notify,
+  flushSmsInBackground
+} = require("../services/notificationService");
+
 const { isUUID, parseCoords } = require("../utils/validate");
 
 const URGENCIES = ["normal", "urgent", "critical"];
@@ -94,6 +98,7 @@ const createRequest = async (req, res) => {
     }
 
     await client.query("COMMIT");
+    flushSmsInBackground();
 
     res.status(201).json({
       message: "Blood request created",
@@ -204,6 +209,7 @@ const respondToMatch = async (req, res) => {
       }
 
       await client.query("COMMIT");
+      flushSmsInBackground();
 
       return res.json({
         message: "Response recorded",
@@ -269,10 +275,12 @@ const respondToMatch = async (req, res) => {
       request.requester_id,
       filled
         ? `All ${request.units_required} donor(s) for your ${request.blood_type} request have confirmed. The hospital will record each donation.`
-        : `A donor has confirmed for your ${request.blood_type} request (${confirmed} of ${request.units_required}).`
+        : `A donor has confirmed for your ${request.blood_type} request (${confirmed} of ${request.units_required}).`,
+      { sms: true }
     );
 
     await client.query("COMMIT");
+    flushSmsInBackground();
 
     res.json({
       message: "Match confirmed",
@@ -289,8 +297,6 @@ const respondToMatch = async (req, res) => {
   }
 };
 
-// The requester (or staff of the hospital the request was sent to) closes a
-// request: cancel it, or mark it fulfilled once the blood has been received.
 const updateRequestStatus = async (req, res) => {
   const { request_id } = req.params;
   const { status } = req.body;
@@ -386,7 +392,8 @@ const updateRequestStatus = async (req, res) => {
           row.user_id,
           row.response_at
             ? `The ${request.blood_type} request you confirmed has been cancelled, so you no longer need to donate. Thank you for stepping up.`
-            : `A ${request.blood_type} request near ${request.location} was cancelled.`
+            : `A ${request.blood_type} request near ${request.location} was cancelled.`,
+          { sms: Boolean(row.response_at) }
         );
       }
     } else {
@@ -398,6 +405,7 @@ const updateRequestStatus = async (req, res) => {
     }
 
     await client.query("COMMIT");
+    flushSmsInBackground();
 
     res.json({ message: `Request ${status}`, status });
 

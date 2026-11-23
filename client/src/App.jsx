@@ -1,12 +1,14 @@
 import { Navigate, NavLink, Link, Outlet, Route, Routes, useLocation } from "react-router-dom";
-import { Building2, ClipboardList, Droplet, HeartPulse, Home, LayoutDashboard, LogOut, Search, ShieldAlert, Siren, UserCog } from "lucide-react";
+import { Bell, Building2, ClipboardList, Droplet, HeartPulse, Home, LayoutDashboard, LogOut, Search, ShieldAlert, Siren, UserCog } from "lucide-react";
 import { homeFor, useAuth } from "./auth";
+import { useUnread } from "./notifications";
 import { Landing, Login, Register, Track, Dashboard, Report } from "./pages/Public";
 import Donor from "./pages/Donor";
 import Requests from "./pages/Requests";
 import Hospital from "./pages/Hospital";
 import Regulator from "./pages/Regulator";
 import Admin from "./pages/Admin";
+import Notifications from "./pages/Notifications";
 import { ThemeToggle } from "./theme";
 
 const ROLE_NAV = {
@@ -16,14 +18,23 @@ const ROLE_NAV = {
   regulator: [["/regulator", "Review queue", ShieldAlert]]
 };
 ROLE_NAV.admin = [["/admin", "Administration", UserCog], ...ROLE_NAV.regulator];
+const NOTIF = ["/notifications", "Notifications", Bell];
 const PUBLIC_NAV = [["/dashboard", "Dashboard", LayoutDashboard], ["/track", "Track a unit", Search], ["/report", "Report a concern", Siren]];
 
 const Logo = () => <Link to="/" className="logo"><Droplet size={24} fill="currentColor" />DAMU</Link>;
-const Links = ({ items }) => items.map(([to, label, Icon]) => <NavLink key={to} to={to} className="nl"><Icon size={18} />{label}</NavLink>);
+const Badge = ({ count }) => count > 0 ? <span className="nbadge" aria-label={`${count} unread`}>{count > 99 ? "99+" : count}</span> : null;
+
+const Links = ({ items }) => {
+  const { unread } = useUnread();
+  return items.map(([to, label, Icon]) => (
+    <NavLink key={to} to={to} className="nl"><Icon size={18} />{label}{to === "/notifications" && <Badge count={unread} />}</NavLink>
+  ));
+};
 
 function Layout() {
   const { user, logout } = useAuth();
-  const own = user ? ROLE_NAV[user.role] || [] : [];
+  const { unread } = useUnread();
+  const own = user ? [...(ROLE_NAV[user.role] || []), NOTIF] : [];
   const tabs = user ? [...own, ...PUBLIC_NAV] : [["/", "Home", Home], ...PUBLIC_NAV];
   return (
     <div className={`app${user ? " authed" : ""}`}>
@@ -45,7 +56,7 @@ function Layout() {
         </main>
       </div>
       <nav className="tabbar" aria-label="Quick navigation">
-        {tabs.slice(0, 5).map(([to, label, Icon]) => <NavLink key={to} to={to} end={to === "/"}><Icon size={20} />{label}</NavLink>)}
+        {tabs.slice(0, 5).map(([to, label, Icon]) => <NavLink key={to} to={to} end={to === "/"}><Icon size={20} />{label}{to === "/notifications" && <Badge count={unread} />}</NavLink>)}
       </nav>
     </div>
   );
@@ -75,6 +86,7 @@ export default function App() {
         <Route path="/hospital" element={g(["hospital"], <Hospital />)} />
         <Route path="/admin" element={g(["admin"], <Admin />)} />
         <Route path="/regulator" element={g(["regulator", "admin"], <Regulator />)} />
+        <Route path="/notifications" element={g(["donor", "patient", "hospital", "regulator", "admin"], <Notifications />)} />
         <Route path="*" element={<div className="card"><h3>Page not found</h3><p className="mute">That page doesn't exist. <Link to="/">Go home</Link></p></div>} />
       </Route>
     </Routes>

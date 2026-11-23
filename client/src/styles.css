@@ -56,3 +56,10 @@ a{color:var(--brand)}:focus-visible{outline:3px solid #f97066;outline-offset:2px
 .bar{height:8px;border-radius:99px;background:#f5f5f4;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;background:var(--brand)}
 .foot{max-width:640px;margin:36px auto 0;font-size:.8rem;color:var(--mute);text-align:center}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.row.end{justify-content:flex-end}
+.nbadge{margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--brand);color:#fff;font-size:.72rem;font-weight:700;display:inline-grid;place-items:center}
+.tabbar a{position:relative}.tabbar .nbadge{position:absolute;top:0;left:calc(50% + 6px);margin:0;min-width:18px;height:18px;font-size:.65rem}
+.notifs{list-style:none;margin:0;padding:0}
+.notif{display:flex;gap:12px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--line)}.notif:last-child{border-bottom:0}
+.notif.unread p{font-weight:600}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--brand);margin-top:7px;flex:none}.dot.read{background:transparent;border:2px solid var(--line)}
