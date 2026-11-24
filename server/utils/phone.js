@@ -11,4 +11,15 @@ function toInternational(phone) {
   return null;
 }
 
-module.exports = { toInternational };
+function phoneVariants(phone) {
+  const raw = typeof phone === "string" ? phone.trim() : "";
+  const standard = toInternational(raw);
+
+  return [...new Set([raw, standard].filter(Boolean))];
+}
+
+module.exports = {
+  toInternational,
+  normalizePhone: toInternational,
+  phoneVariants
+};

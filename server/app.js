@@ -29,6 +29,29 @@ app.use("/api", rateLimit({
   limit: 200
 }));
 
+const authLimitMessage = {
+  message: "Too many attempts. Please wait a few minutes and try again."
+};
+
+app.use("/api/auth/login", rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: Number(process.env.LOGIN_RATE_LIMIT) || 10,
+  skipSuccessfulRequests: true,
+  message: authLimitMessage
+}));
+
+app.use("/api/auth/register", rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: Number(process.env.REGISTER_RATE_LIMIT) || 20,
+  message: authLimitMessage
+}));
+
+app.use("/api/auth/change-password", rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  message: authLimitMessage
+}));
+
 app.get("/", (req, res) => {
   res.json({
     message: "Welcome to DAMU Blood Donation Platform API"

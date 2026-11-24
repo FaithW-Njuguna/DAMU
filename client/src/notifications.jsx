@@ -13,7 +13,7 @@ export function NotificationsProvider({ children }) {
   const [unread, setUnread] = useState(0);
 
   const refresh = useCallback(async () => {
-    if (!user) return setUnread(0);
+    if (!user || user.must_change_password) return setUnread(0);
 
     try {
       const data = await api("/notifications/unread-count");

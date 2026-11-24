@@ -1,5 +1,5 @@
 import { Navigate, NavLink, Link, Outlet, Route, Routes, useLocation } from "react-router-dom";
-import { Bell, Building2, ClipboardList, Droplet, HeartPulse, Home, LayoutDashboard, LogOut, Search, ShieldAlert, Siren, UserCog } from "lucide-react";
+import { Bell, Building2, ClipboardList, Droplet, HeartPulse, Home, LayoutDashboard, KeyRound, LogOut, Search, ShieldAlert, Siren, UserCog } from "lucide-react";
 import { homeFor, useAuth } from "./auth";
 import { useUnread } from "./notifications";
 import { Landing, Login, Register, Track, Dashboard, Report } from "./pages/Public";
@@ -9,6 +9,7 @@ import Hospital from "./pages/Hospital";
 import Regulator from "./pages/Regulator";
 import Admin from "./pages/Admin";
 import Notifications from "./pages/Notifications";
+import ChangePassword from "./pages/ChangePassword";
 import { ThemeToggle } from "./theme";
 
 const ROLE_NAV = {
@@ -41,6 +42,7 @@ function Layout() {
       <aside className="side" aria-label="Main navigation">
         <Logo /><Links items={own} /><Links items={PUBLIC_NAV} /><div className="sp" /><ThemeToggle />
         <div className="me">{user?.full_name}<br />{user?.role}</div>
+                {user && <NavLink to="/change-password" className="nl"><KeyRound size={18} />Password</NavLink>}
         <button className="nl" onClick={logout}><LogOut size={18} />Log out</button>
       </aside>
       <div>
@@ -66,6 +68,7 @@ function Guard({ roles, children }) {
   const { user } = useAuth();
   const loc = useLocation();
   if (!user) return <Navigate to="/login" state={{ from: loc.pathname }} replace />;
+  if (user.must_change_password && loc.pathname !== "/change-password") return <Navigate to="/change-password" replace />;
   if (!roles.includes(user.role)) return <Navigate to={homeFor(user.role)} replace />;
   return children;
 }
@@ -87,6 +90,7 @@ export default function App() {
         <Route path="/admin" element={g(["admin"], <Admin />)} />
         <Route path="/regulator" element={g(["regulator", "admin"], <Regulator />)} />
         <Route path="/notifications" element={g(["donor", "patient", "hospital", "regulator", "admin"], <Notifications />)} />
+        <Route path="/change-password" element={g(["donor", "patient", "hospital", "regulator", "admin"], <ChangePassword />)} />
         <Route path="*" element={<div className="card"><h3>Page not found</h3><p className="mute">That page doesn't exist. <Link to="/">Go home</Link></p></div>} />
       </Route>
     </Routes>

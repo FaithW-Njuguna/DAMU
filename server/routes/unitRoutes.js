@@ -8,7 +8,8 @@ const {
 
 const {
   authenticateToken,
-  authorizeRoles
+  authorizeRoles,
+  requireVerifiedHospital
 } = require("../middleware/authMiddleware");
 
 const router = express.Router();
@@ -17,6 +18,7 @@ router.post(
   "/",
   authenticateToken,
   authorizeRoles("hospital"),
+  requireVerifiedHospital,
   createUnit
 );
 
@@ -24,6 +26,7 @@ router.patch(
   "/:unit_id/status",
   authenticateToken,
   authorizeRoles("hospital"),
+  requireVerifiedHospital,
   updateUnitStatus
 );
 

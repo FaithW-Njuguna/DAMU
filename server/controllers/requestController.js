@@ -53,13 +53,17 @@ const createRequest = async (req, res) => {
       return fail(res, 400, "Invalid hospital");
     }
 
-    const hospital = await pool.query(
-      "SELECT 1 FROM hospitals WHERE hospital_id = $1",
+        const hospital = await pool.query(
+      "SELECT verified FROM hospitals WHERE hospital_id = $1",
       [hospitalId]
     );
 
     if (!hospital.rowCount) {
       return fail(res, 404, "Hospital not found");
+    }
+
+    if (!hospital.rows[0].verified) {
+      return fail(res, 409, "This hospital isn't verified yet, so it can't receive requests");
     }
   }
 

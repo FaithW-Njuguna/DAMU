@@ -11,6 +11,7 @@ export default function Hospital() {
   const linked = !!user.hospital_id;
   const matches = useFetch("/units/confirmed-matches", linked);
   const units = useFetch("/units", linked);
+  const me = useFetch("/auth/me", linked);
   const [filter, setFilter] = useState("all");
   const [flag, setFlag] = useState(null);
   const [busy, setBusy] = useState("");
@@ -46,6 +47,11 @@ export default function Hospital() {
   return (
     <div className="stack">
       <PageHead title="Unit tracking" sub="Log each donated unit from collection to confirmed use. Units with no confirmed use after 14 days are flagged automatically." />
+            {me.data?.user && !me.data.user.hospital_verified && (
+        <div className="alert" role="status">
+          <div><strong>Awaiting verification.</strong> The DAMU administrator has not verified {me.data.user.hospital_name} yet. You can sign in and look around, but logging collections and updating units is switched off until it is verified.</div>
+        </div>
+      )}
       <Card title="Confirmed donors awaiting collection">
         <DataState loading={matches.loading} error={matches.error} onRetry={matches.reload}>
           {(matches.data?.matches || []).length ? <Table columns={mcols} rows={matches.data.matches} rowKey="match_id" /> : <Empty title="No donors waiting" text="Donors who confirm a request will appear here." />}

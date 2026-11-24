@@ -1,9 +1,11 @@
 require("dotenv").config();
 const bcrypt = require("bcryptjs");
 const pool = require("../config/db");
+const { normalizePhone } = require("../utils/phone");
 
 (async () => {
-  const [role, name, phone, password, hospitalName, location] = process.argv.slice(2);
+    const [role, name, rawPhone, password, hospitalName, location] = process.argv.slice(2);
+  const phone = normalizePhone(rawPhone || "");
   if (!["hospital", "regulator", "admin"].includes(role) || !name || !phone || !password || password.length < 10 || (role === "hospital" && !hospitalName)) {
     console.log('Usage: node scripts/createStaff.js <hospital|regulator|admin> "<full name>" <phone> <password, 10+ chars> ["<hospital name>" "<location>"]');
     process.exit(1);

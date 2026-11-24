@@ -47,7 +47,7 @@ const getMyRequests = async (req, res) => {
 };
 
 const listHospitals = async (req, res) => {
-  const r = await pool.query("SELECT hospital_id, name, location FROM hospitals ORDER BY name");
+  const r = await pool.query("SELECT hospital_id, name, location FROM hospitals WHERE verified = TRUE ORDER BY name");
   res.json({ hospitals: r.rows });
 };
 

@@ -107,3 +107,55 @@ export const FilterSelect = ({ value, onChange, options, label }) => (
     <option value="all">All</option>{options.map((o) => <option key={o} value={o}>{o.replace("_", " ")}</option>)}
   </Field>
 );
+
+
+export function Modal({ open, title, onClose, children }) {
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div className="scrim" onClick={onClose}>
+      <div className="dlg" role="dialog" aria-modal="true" aria-labelledby="modal-t" onClick={(e) => e.stopPropagation()}>
+        <h3 id="modal-t">{title}</h3>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// Asks for a written reason, so important decisions can be audited later.
+export function NoteDialog({ open, title, text, label = "Notes", minLength = 10, confirmLabel, busy, onSubmit, onCancel }) {
+  const [note, setNote] = useState("");
+  const [err, setErr] = useState("");
+
+  useEffect(() => {
+    if (open) { setNote(""); setErr(""); }
+  }, [open]);
+
+  const submit = (e) => {
+    e.preventDefault();
+    if (note.trim().length < minLength) {
+      return setErr(`Write at least ${minLength} characters so this can be checked later.`);
+    }
+    onSubmit(note.trim());
+  };
+
+  return (
+    <Modal open={open} title={title} onClose={onCancel}>
+      <form onSubmit={submit} noValidate>
+        {text && <p className="mute" style={{ margin: "8px 0 14px" }}>{text}</p>}
+        <Field label={label} as="textarea" rows={3} value={note} error={err} onChange={(e) => setNote(e.target.value)} />
+        <div className="row">
+          <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button>
+          <Button type="submit" busy={busy}>{confirmLabel}</Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}

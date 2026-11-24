@@ -19,7 +19,7 @@ export function AuthProvider({ children }) {
     setUser(u);
   };
   const login = async (phone_number, password) => {
-    const d = await api("/auth/login", { method: "POST", body: { phone_number, password } });
+    const d = await api("/auth/login", { method: "POST", body: { phone_number, password }, anon: true });
     save(d.user, d.token);
     return d.user;
   };
@@ -29,5 +29,11 @@ export function AuthProvider({ children }) {
     setAuthFailHandler(() => { save(null, null); navigate("/login", { state: { expired: true } }); });
   }, [navigate]);
 
-  return <Ctx.Provider value={{ user, login, logout }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ user, login, logout, patchUser }}>{children}</Ctx.Provider>;
 }
+
+  const patchUser = (patch) => {
+    const next = { ...user, ...patch };
+    sessionStorage.setItem("damu_user", JSON.stringify(next));
+    setUser(next);
+  };
