@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { BarChart3, HeartPulse, ShieldCheck } from "lucide-react";
 import { api } from "../api";
+import ShortageAlerts from "../ShortageAlerts";
 import { homeFor, useAuth } from "../auth";
 import { Badge, Button, Card, Confirm, DataState, Field, FormAlert, PageHead, StatusBadge, fmt, useFetch, useToast } from "../ui";
 
@@ -15,6 +16,7 @@ export function Landing() {
         <p>DAMU matches urgent requests with compatible donors nearby, then tracks each donated unit from collection to use, in public view.</p>
         <div className="row"><Link className="btn primary" to="/register">Become a donor</Link><Link className="btn ghost" to="/dashboard">See the public dashboard</Link></div>
       </section>
+      <ShortageAlerts />
       <div className="grid">
         <Card title="Matching Engine"><HeartPulse color="#b42318" /><p className="mute">Patients and hospitals post a request. Compatible, available donors are notified and can confirm in one tap.</p></Card>
         <Card title="Accountability Chain"><ShieldCheck color="#b42318" /><p className="mute">Every unit gets a tracking code. Units not accounted for within 14 days are flagged for regulators.</p></Card>
@@ -136,6 +138,7 @@ export function Dashboard() {
   return (
     <div className="stack">
       <PageHead title="Public dashboard" sub="Live totals from the DAMU platform. No login needed." />
+      <ShortageAlerts />
       <DataState loading={d.loading} error={d.error} onRetry={d.reload}>
         {d.data && <>
           <div className="grid">

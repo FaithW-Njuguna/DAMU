@@ -1,5 +1,5 @@
 import { Navigate, NavLink, Link, Outlet, Route, Routes, useLocation } from "react-router-dom";
-import { Bell, Building2, ClipboardList, Droplet, HeartPulse, Home, LayoutDashboard, KeyRound, LogOut, Search, ShieldAlert, Siren, UserCog } from "lucide-react";
+import { BarChart3, Bell, Building2, ClipboardList, Droplet, HeartPulse, Home, LayoutDashboard, KeyRound, LogOut, Search, ShieldAlert, Siren, UserCog } from "lucide-react";
 import { homeFor, useAuth } from "./auth";
 import { useUnread } from "./notifications";
 import { Landing, Login, Register, Track, Dashboard, Report } from "./pages/Public";
@@ -10,6 +10,7 @@ import Regulator from "./pages/Regulator";
 import Admin from "./pages/Admin";
 import Notifications from "./pages/Notifications";
 import ChangePassword from "./pages/ChangePassword";
+import Insights from "./pages/Insights";
 import { ThemeToggle } from "./theme";
 
 const ROLE_NAV = {
@@ -20,7 +21,7 @@ const ROLE_NAV = {
 };
 ROLE_NAV.admin = [["/admin", "Administration", UserCog], ...ROLE_NAV.regulator];
 const NOTIF = ["/notifications", "Notifications", Bell];
-const PUBLIC_NAV = [["/dashboard", "Dashboard", LayoutDashboard], ["/track", "Track a unit", Search], ["/report", "Report a concern", Siren]];
+const PUBLIC_NAV = [["/dashboard", "Dashboard", LayoutDashboard],["/insights", "Blood insights", BarChart3], ["/track", "Track a unit", Search], ["/report", "Report a concern", Siren]];
 
 const Logo = () => <Link to="/" className="logo"><Droplet size={24} fill="currentColor" />DAMU</Link>;
 const Badge = ({ count }) => count > 0 ? <span className="nbadge" aria-label={`${count} unread`}>{count > 99 ? "99+" : count}</span> : null;
@@ -83,6 +84,7 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/track" element={<Track />} />
+        <Route path="/insights" element={<Insights />} />
         <Route path="/report" element={<Report />} />
         <Route path="/donor" element={g(["donor"], <Donor />)} />
         <Route path="/requests" element={g(["patient", "hospital"], <Requests />)} />

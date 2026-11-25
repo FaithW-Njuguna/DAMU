@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { api } from "../api";
+import ShortageAlerts from "../ShortageAlerts";
 import { BLOOD, Badge, Button, Card, Confirm, DataState, Empty, Field, FilterSelect, FormAlert, GeoCapture, Modal, PageHead, StatusBadge, Table, fmt, fmtDay, useFetch, useToast } from "../ui";
 
 const AV = [["available", "Available"], ["unavailable", "Unavailable"], ["recently_donated", "Recently donated"]];
@@ -84,6 +85,7 @@ function Profile({ donor, reload }) {
         {next && donor.availability_status === "available" && <p className="mute" style={{ marginTop: 8 }}>You donated recently, so you'll be matched to new requests again from {dayText(next)}.</p>}
       </Card>
       <LocationCard donor={donor} reload={reload} />
+      <ShortageAlerts bloodType={donor.blood_type} />
       <Matches onChanged={reload} />
     </div>
   );

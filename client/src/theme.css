@@ -13,3 +13,6 @@
 [data-theme="dark"] .sk{background:linear-gradient(90deg,#292524,#35302d,#292524);background-size:200% 100%}
 [data-theme="dark"] .empty svg{color:#57534e}[data-theme="dark"] .scrim{background:#000a}
 body,.card,.top,.side,.tabbar{transition:background-color .2s,color .2s,border-color .2s}
+[data-theme="dark"] .shortage{background:#2a1517;border-color:#7f1d1d}
+[data-theme="dark"] .shortage h3{color:#fca5a5}
+[data-theme="dark"] .shortage-item{border-color:#7f1d1d}

@@ -12,6 +12,8 @@ const dashboardRoutes = require("./routes/dashboardRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 const adminRoutes = require('./routes/adminRoutes');
 const notificationRoutes = require("./routes/notificationRoutes");
+const alertRoutes = require("./routes/alertRoutes");
+const insightsRoutes = require("./routes/insightsRoutes");
 
 const app = express();
 
@@ -69,6 +71,8 @@ const portalRoutes = require("./routes/portalRoutes");
 // ...
 app.use("/api/reports", reportRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/alerts", alertRoutes);
+app.use("/api/insights", insightsRoutes);
 app.use("/api", portalRoutes);
 app.use('/api/admin', adminRoutes);
 

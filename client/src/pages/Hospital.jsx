@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api } from "../api";
 import { useAuth } from "../auth";
+import HospitalAlerts from "./HospitalAlerts";
 import { Badge, Button, Card, Confirm, DataState, Empty, FilterSelect, FormAlert, PageHead, StatusBadge, Table, fmt, fmtDay, useFetch, useToast } from "../ui";
 
 const NEXT = { collected: [["received", "Mark received"]], received: [["used", "Mark used"]] };
@@ -61,6 +62,7 @@ export default function Hospital() {
           <div><strong>Awaiting verification.</strong> The DAMU administrator has not verified {me.data.user.hospital_name} yet. You can sign in and look around, but logging collections and updating units is switched off until it is verified.</div>
         </div>
       )}
+      <HospitalAlerts />
       <Card title="Confirmed donors awaiting collection">
         <DataState loading={matches.loading} error={matches.error} onRetry={matches.reload}>
           {(matches.data?.matches || []).length ? <Table columns={mcols} rows={matches.data.matches} rowKey="match_id" /> : <Empty title="No donors waiting" text="Donors who confirm a request will appear here." />}
