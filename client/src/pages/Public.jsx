@@ -12,17 +12,16 @@ export function Landing() {
   return (
     <div className="stack">
       <section className="hero">
-        <h1>Find a blood donor fast. See where every unit goes.</h1>
-        <p>DAMU matches urgent requests with compatible donors nearby, then tracks each donated unit from collection to use, in public view.</p>
-        <div className="row"><Link className="btn primary" to="/register">Become a donor</Link><Link className="btn ghost" to="/dashboard">See the public dashboard</Link></div>
+        <h1>Find a donor fast. See where every unit goes.</h1>
+        <div className="row"><Link className="btn primary" to="/register">Become a donor</Link><Link className="btn ghost" to="/dashboard">Public dashboard</Link></div>
       </section>
       <ShortageAlerts />
       <div className="grid">
-        <Card title="Matching Engine"><HeartPulse color="#b42318" /><p className="mute">Patients and hospitals post a request. Compatible, available donors are notified and can confirm in one tap.</p></Card>
-        <Card title="Accountability Chain"><ShieldCheck color="#b42318" /><p className="mute">Every unit gets a tracking code. Units not accounted for within 14 days are flagged for regulators.</p></Card>
-        <Card title="Public Dashboard"><BarChart3 color="#b42318" /><p className="mute">Anyone can check the numbers without an account.</p></Card>
+        <Card title="Matching"><HeartPulse color="#d92d20" /></Card>
+        <Card title="Accountability"><ShieldCheck color="#d92d20" /></Card>
+        <Card title="Transparency"><BarChart3 color="#d92d20" /></Card>
       </div>
-      <Card><div className="stat">62%</div><p className="mute">of the 550,000 units of blood Kenya needed were collected in 2024/25 (KNBTS). DAMU aims to close that gap by making donating easier and the system easier to trust.</p></Card>
+      <Card><div className="stat">62%</div><p className="mute">of Kenya's blood need met in 2024/25 (KNBTS).</p></Card>
     </div>
   );
 }

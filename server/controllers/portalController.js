@@ -63,7 +63,7 @@ const listHospitalUnits = async (req, res) => {
     `SELECT unit_id, tracking_code, status, collection_date,
             to_char(expiry_date, 'YYYY-MM-DD') AS expiry_date,
             (expiry_date - CURRENT_DATE)::int AS days_to_expiry
-     FROM blood_units WHERE hospital_id = $1 ORDER BY created_at DESC`
+     FROM blood_units WHERE hospital_id = $1 ORDER BY created_at DESC`,
     [req.user.hospital_id]
   );
   res.json({ units: r.rows });

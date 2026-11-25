@@ -1,0 +1,32 @@
+/* Soft Pop: warm, rounded, friendly. No bounce or scale effects. */
+:root:not([data-theme="dark"]){--bg:#fff7f5;--brand-l:#ffe9e6;--r:20px;--sh:0 2px 4px #b4231810,0 10px 28px #b423181a;--line:#f3e1dd}
+:root{--grad:linear-gradient(135deg,#ff6b5e,#d92d20)}
+body{background:var(--bg)}
+:root:not([data-theme="dark"]) body{background:radial-gradient(1200px 500px at 85% -10%,#ffe1dc,transparent 60%),var(--bg)}
+h1,h2,h3{letter-spacing:-.01em}
+.card,.shortage{border-radius:var(--r);border-color:var(--line)}
+.top,.side,.tabbar{border-color:var(--line)}
+.btn{border-radius:999px;transition:background .2s,box-shadow .2s,filter .2s}
+.btn:active{transform:none}
+.btn.primary{background:var(--grad);box-shadow:0 6px 16px #d92d2040}
+.btn.primary:hover:not(:disabled){background:var(--grad);filter:brightness(1.06);box-shadow:0 8px 20px #d92d2055}
+.btn.ghost{border-color:#f0cfc9}
+.field input,.field select,.field textarea{border-radius:14px;border-color:#f0cfc9}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:#ff6b5e;box-shadow:0 0 0 4px #ff6b5e26}
+.nl{border-radius:999px}
+.nl.active{background:var(--brand-l)}
+.badge{border-radius:999px;padding:3px 12px}
+.alert{border-radius:16px}
+.toast{border-radius:16px;border-left:0;box-shadow:0 10px 30px #b4231826;border:1px solid var(--line);animation:softfade .25s ease-out}
+.toast::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--ok);flex:none}
+.toast.err::before{background:var(--bad)}
+@keyframes softfade{from{opacity:0}}
+.dlg{border-radius:24px}
+.shortage-type,.nbadge{background:var(--grad)}
+.stat{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero{padding:40px 0 16px}
+.hero h1{max-width:14ch}
+.grid .card{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.grid .card>h3{margin:8px 0 0}
+.table th{text-transform:uppercase;letter-spacing:.04em;font-size:.72rem}
+.bar{height:10px}.bar i{background:var(--grad);border-radius:99px}

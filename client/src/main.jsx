@@ -7,6 +7,7 @@ import { AuthProvider } from "./auth.jsx";
 import { NotificationsProvider } from "./notifications.jsx";
 import { ToastProvider } from "./ui.jsx";
 import "./theme.css";
+import "./softpop.css";
 import { ThemeProvider } from "./theme.jsx";
 
 createRoot(document.getElementById("root")).render(
