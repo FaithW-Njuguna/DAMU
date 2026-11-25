@@ -21,7 +21,6 @@ export function Landing() {
         <Card title="Accountability"><ShieldCheck color="#d92d20" /></Card>
         <Card title="Transparency"><BarChart3 color="#d92d20" /></Card>
       </div>
-      <Card><div className="stat">62%</div><p className="mute">of Kenya's blood need met in 2024/25 (KNBTS).</p></Card>
     </div>
   );
 }
