@@ -37,6 +37,16 @@ function distanceKm(lat1, lon1, lat2, lon2) {
   return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+const sameArea = (a, b) =>
+  (a || "").trim().toLowerCase() === (b || "").trim().toLowerCase();
+
+// Donors who have waited longest since their last donation come first.
+const byLongestRest = (a, b) =>
+  (a.last_donation_date ? +new Date(a.last_donation_date) : 0) -
+  (b.last_donation_date ? +new Date(b.last_donation_date) : 0);
+
+// Donors who could answer this request: compatible group, available, past the
+// 56-day rest, and not already asked about this same request.
 async function findCandidates(db, request, limit = MATCH_BATCH_SIZE) {
   const compatibleTypes = getCompatibleBloodTypes(request.blood_type);
 
@@ -45,7 +55,8 @@ async function findCandidates(db, request, limit = MATCH_BATCH_SIZE) {
   }
 
   const { rows } = await db.query(
-    `SELECT d.donor_id, d.user_id, d.latitude, d.longitude
+    `SELECT d.donor_id, d.user_id, d.location, d.latitude, d.longitude,
+            d.last_donation_date
      FROM donors d
      WHERE d.blood_type = ANY($1::blood_group[])
        AND d.availability_status = 'available'
@@ -60,10 +71,11 @@ async function findCandidates(db, request, limit = MATCH_BATCH_SIZE) {
     [compatibleTypes, request.request_id]
   );
 
-  let candidates = rows;
+  let candidates;
 
   if (request.latitude != null && request.longitude != null) {
-    candidates = candidates
+    // Closest donors first, within the radius.
+    const nearby = rows
       .filter((d) => d.latitude != null && d.longitude != null)
       .map((d) => ({
         ...d,
@@ -76,11 +88,29 @@ async function findCandidates(db, request, limit = MATCH_BATCH_SIZE) {
       }))
       .filter((d) => d.distance <= MATCH_RADIUS_KM)
       .sort((a, b) => a.distance - b.distance);
+
+    // Donors who never shared coordinates are still reachable when they
+    // live in the same area as the request.
+    const sameAreaNoCoords = rows
+      .filter((d) => d.latitude == null || d.longitude == null)
+      .filter((d) => sameArea(d.location, request.location))
+      .sort(byLongestRest);
+
+    candidates = [...nearby, ...sameAreaNoCoords];
+  } else {
+    // No coordinates on the request: donors in the same area first.
+    candidates = [...rows].sort(
+      (a, b) =>
+        Number(sameArea(b.location, request.location)) -
+          Number(sameArea(a.location, request.location)) ||
+        byLongestRest(a, b)
+    );
   }
 
   return candidates.slice(0, limit);
 }
 
+// Asks up to `limit` more donors and returns how many were asked.
 async function matchRequest(db, request, limit = MATCH_BATCH_SIZE) {
   const donors = await findCandidates(db, request, limit);
 
@@ -95,7 +125,7 @@ async function matchRequest(db, request, limit = MATCH_BATCH_SIZE) {
     await notify(
       db,
       donor.user_id,
-           `A ${request.blood_type} blood request (${request.urgency}) near ${request.location} matches your blood group. Open DAMU to confirm or decline.`,
+      `A ${request.blood_type} blood request (${request.urgency}) near ${request.location} matches your blood group. Open DAMU to confirm or decline.`,
       { sms: true }
     );
   }

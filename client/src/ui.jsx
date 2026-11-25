@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useId, useState } from "react";
-import { AlertCircle, CheckCircle2, Inbox, Loader2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Inbox, Loader2, MapPin, MapPinOff } from "lucide-react";
 import { api } from "./api";
 
 export const BLOOD = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
@@ -157,5 +157,52 @@ export function NoteDialog({ open, title, text, label = "Notes", minLength = 10,
         </div>
       </form>
     </Modal>
+  );
+}
+
+
+// A calendar day from the server ("2026-11-24") shown in the reader's own format.
+export const fmtDay = (day) =>
+  day ? new Date(day.slice(0, 10) + "T00:00:00").toLocaleDateString("en-KE", { dateStyle: "medium" }) : "–";
+
+// Optional "use my current location" capture. Falls back to the typed area name.
+export function GeoCapture({ value, onChange }) {
+  const [state, setState] = useState({ busy: false, error: "" });
+  const supported = typeof navigator !== "undefined" && "geolocation" in navigator;
+
+  const capture = () => {
+    setState({ busy: true, error: "" });
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        onChange({ latitude: Number(p.coords.latitude.toFixed(6)), longitude: Number(p.coords.longitude.toFixed(6)) });
+        setState({ busy: false, error: "" });
+      },
+      (e) => setState({
+        busy: false,
+        error: e.code === 1
+          ? "Location permission was blocked. Allow it in your browser settings, or continue with the area name only."
+          : "Couldn't get your location. Check that location is turned on, or continue with the area name only."
+      }),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  };
+
+  if (!supported) return <small className="mute">Your browser can't share location, so matching will use the area name.</small>;
+
+  const has = value?.latitude != null && value?.longitude != null;
+
+  return (
+    <div className="geo">
+      <div className="row" style={{ gap: 8 }}>
+        {has
+          ? <>
+              <span className="badge ok"><MapPin size={14} style={{ verticalAlign: "-2px" }} /> Exact location captured</span>
+              <Button type="button" variant="ghost" className="sm" onClick={() => onChange({ latitude: null, longitude: null })}><MapPinOff size={14} />Remove</Button>
+            </>
+          : <Button type="button" variant="ghost" className="sm" busy={state.busy} onClick={capture}><MapPin size={16} />Use my current location</Button>}
+      </div>
+      {state.error && <small className="err" role="alert">{state.error}</small>}
+      <small className="mute">Optional. Used only to find people nearby, and never shown to anyone else.</small>
+    </div>
   );
 }

@@ -18,6 +18,9 @@ const getMyMatches = async (req, res) => {
   const r = await pool.query(
     `SELECT m.match_id, m.status, m.tracking_code, m.created_at,
                         r.blood_type, r.units_required, r.urgency, r.location, r.status AS request_status,
+            to_char(m.donation_date, 'YYYY-MM-DD') AS donation_date,
+            m.donor_reported_at, m.requester_confirmed_at,
+            EXISTS (SELECT 1 FROM blood_units u WHERE u.match_id = m.match_id) AS unit_logged,
             h.name AS hospital_name
      FROM matches m
      JOIN donors d ON d.donor_id = m.donor_id
@@ -35,7 +38,10 @@ const getMyRequests = async (req, res) => {
     `SELECT r.request_id, r.blood_type, r.units_required, r.urgency, r.location, r.status, r.created_at,
             h.name AS hospital_name,
             (SELECT COUNT(*)::int FROM matches m WHERE m.request_id = r.request_id) AS donors_notified,
-            (SELECT COUNT(*)::int FROM matches m WHERE m.request_id = r.request_id AND m.status = 'confirmed') AS donors_confirmed
+            (SELECT COUNT(*)::int FROM matches m WHERE m.request_id = r.request_id AND m.status = 'confirmed') AS donors_confirmed,
+            (SELECT COUNT(*)::int FROM matches m WHERE m.request_id = r.request_id AND m.status = 'confirmed'
+               AND m.donor_reported_at IS NOT NULL AND m.requester_confirmed_at IS NULL) AS donations_reported,
+            (r.requester_id = $1) AS is_mine
      FROM blood_requests r
      LEFT JOIN hospitals h ON h.hospital_id = r.hospital_id
           WHERE r.requester_id = $1
@@ -54,8 +60,10 @@ const listHospitals = async (req, res) => {
 const listHospitalUnits = async (req, res) => {
   if (!needHospital(req, res)) return;
   const r = await pool.query(
-    `SELECT unit_id, tracking_code, status, collection_date
-     FROM blood_units WHERE hospital_id = $1 ORDER BY created_at DESC`,
+    `SELECT unit_id, tracking_code, status, collection_date,
+            to_char(expiry_date, 'YYYY-MM-DD') AS expiry_date,
+            (expiry_date - CURRENT_DATE)::int AS days_to_expiry
+     FROM blood_units WHERE hospital_id = $1 ORDER BY created_at DESC`
     [req.user.hospital_id]
   );
   res.json({ units: r.rows });
@@ -64,7 +72,8 @@ const listHospitalUnits = async (req, res) => {
 const listConfirmedMatches = async (req, res) => {
   if (!needHospital(req, res)) return;
   const r = await pool.query(
-    `SELECT m.match_id, m.tracking_code, m.response_at, r.blood_type, r.location
+    `SELECT m.match_id, m.tracking_code, m.response_at, r.blood_type, r.location,
+            to_char(m.donation_date, 'YYYY-MM-DD') AS donation_date, m.donor_reported_at
      FROM matches m JOIN blood_requests r ON r.request_id = m.request_id
      WHERE m.status = 'confirmed'
        AND (r.hospital_id IS NULL OR r.hospital_id = $1)

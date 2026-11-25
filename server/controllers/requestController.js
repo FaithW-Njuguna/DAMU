@@ -12,6 +12,7 @@ const {
 } = require("../services/notificationService");
 
 const { isUUID, parseCoords } = require("../utils/validate");
+const { startCooldown } = require("../services/donorService");
 
 const URGENCIES = ["normal", "urgent", "critical"];
 const MAX_UNITS = 20;
@@ -423,8 +424,91 @@ const updateRequestStatus = async (req, res) => {
   }
 };
 
+// The person who posted the request confirms that donors who report donating
+// really did. Each confirmation starts that donor's 56-day rest.
+const confirmDonations = async (req, res) => {
+  const { request_id } = req.params;
+
+  if (!isUUID(request_id)) {
+    return fail(res, 400, "Invalid request");
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const result = await client.query(
+      "SELECT * FROM blood_requests WHERE request_id = $1 FOR UPDATE",
+      [request_id]
+    );
+
+    if (!result.rowCount) {
+      await client.query("ROLLBACK");
+      return fail(res, 404, "Request not found");
+    }
+
+    const request = result.rows[0];
+
+    if (request.requester_id !== req.user.user_id) {
+      await client.query("ROLLBACK");
+      return fail(res, 403, "Only the person who posted this request can confirm donations here");
+    }
+
+    const claims = await client.query(
+      `SELECT m.match_id, m.donor_id,
+              to_char(m.donation_date, 'YYYY-MM-DD') AS donation_date,
+              d.user_id AS donor_user_id
+       FROM matches m
+       JOIN donors d ON d.donor_id = m.donor_id
+       WHERE m.request_id = $1
+         AND m.status = 'confirmed'
+         AND m.donor_reported_at IS NOT NULL
+         AND m.requester_confirmed_at IS NULL
+       FOR UPDATE OF m`,
+      [request_id]
+    );
+
+    if (!claims.rowCount) {
+      await client.query("ROLLBACK");
+      return fail(res, 409, "No donations are waiting for your confirmation");
+    }
+
+    for (const claim of claims.rows) {
+      await client.query(
+        "UPDATE matches SET requester_confirmed_at = NOW() WHERE match_id = $1",
+        [claim.match_id]
+      );
+
+      await startCooldown(client, claim.donor_id, claim.donation_date);
+
+      await notify(
+        client,
+        claim.donor_user_id,
+        `Your donation for the ${request.blood_type} request was confirmed. Thank you for saving a life.`
+      );
+    }
+
+    await client.query("COMMIT");
+
+    res.json({
+      message: "Donation confirmed",
+      confirmed: claims.rowCount
+    });
+
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error(error);
+    fail(res, 500, "Could not confirm the donation");
+
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   createRequest,
   respondToMatch,
-  updateRequestStatus
+  updateRequestStatus,
+  confirmDonations
 };

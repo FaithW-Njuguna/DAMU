@@ -63,3 +63,4 @@ a{color:var(--brand)}:focus-visible{outline:3px solid #f97066;outline-offset:2px
 .notif{display:flex;gap:12px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--line)}.notif:last-child{border-bottom:0}
 .notif.unread p{font-weight:600}
 .dot{width:10px;height:10px;border-radius:50%;background:var(--brand);margin-top:7px;flex:none}.dot.read{background:transparent;border:2px solid var(--line)}
+.geo{display:grid;gap:6px}.geo .err{color:var(--bad);font-weight:500}

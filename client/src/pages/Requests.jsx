@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api } from "../api";
 import { useAuth } from "../auth";
-import { BLOOD, Button, Card, Confirm, DataState, Empty, Field, FilterSelect, FormAlert, PageHead, StatusBadge, Table, fmt, useFetch, useToast } from "../ui";
+import { BLOOD, Button, Card, Confirm, DataState, Empty, Field, FilterSelect, FormAlert, GeoCapture, PageHead, StatusBadge, Table, fmt, useFetch, useToast } from "../ui";
 
 export default function Requests() {
   const { user } = useAuth();
@@ -15,6 +15,8 @@ export default function Requests() {
   const [filter, setFilter] = useState("all");
   const [ask, setAsk] = useState(null);
   const [closing, setClosing] = useState(false);
+  const [geo, setGeo] = useState({ latitude: null, longitude: null });
+  const [donAsk, setDonAsk] = useState(null);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
 
   const submit = async (e) => {
@@ -27,9 +29,10 @@ export default function Requests() {
     if (Object.keys(v).length) return;
     setBusy(true);
     try {
-      const d = await api("/requests", { method: "POST", body: { ...f, units_required: Number(f.units_required), location: f.location.trim(), hospital_id: f.hospital_id || undefined } });
+      const d = await api("/requests", { method: "POST", body: { ...f, ...geo, units_required: Number(f.units_required), location: f.location.trim(), hospital_id: f.hospital_id || undefined } });
       toast(d.candidates_notified ? `Request sent to ${d.candidates_notified} compatible donor${d.candidates_notified > 1 ? "s" : ""}` : "Request saved, but no compatible available donors were found yet", d.candidates_notified ? "ok" : "err");
       setF({ ...f, blood_type: "", units_required: 1, location: "" });
+      setGeo({ latitude: null, longitude: null });
       list.reload();
     } catch (er) { setFormErr(er.message); }
     setBusy(false);
@@ -46,18 +49,30 @@ export default function Requests() {
     setAsk(null);
   };
 
+    const confirmDonation = async () => {
+    setClosing(true);
+    try {
+      const d = await api(`/requests/${donAsk.request_id}/confirm-donations`, { method: "POST" });
+      toast(d.confirmed > 1 ? "Donations confirmed. Thank you!" : "Donation confirmed. Thank you!");
+      list.reload();
+    } catch (e) { toast(e.message, "err"); }
+    setClosing(false);
+    setDonAsk(null);
+  };
+
   const rows = (list.data?.requests || []).filter((r) => filter === "all" || r.status === filter);
   const cols = [
     { key: "need", label: "Need", render: (r) => `${r.blood_type}, ${r.units_required} unit${r.units_required > 1 ? "s" : ""}` },
     { key: "urgency", label: "Urgency", render: (r) => <StatusBadge value={r.urgency} /> },
     { key: "where", label: "Where", render: (r) => r.hospital_name || r.location },
     { key: "status", label: "Status", render: (r) => <StatusBadge value={r.status} /> },
-        { key: "donors", label: "Donors", render: (r) => `${r.donors_confirmed} of ${r.units_required} confirmed, ${r.donors_notified} asked` },
+    { key: "donors", label: "Donors", render: (r) => `${r.donors_confirmed} of ${r.units_required} confirmed, ${r.donors_notified} asked` },
     { key: "created_at", label: "Posted", render: (r) => fmt(r.created_at) },
     { key: "act", label: "Action", render: (r) => (
       <span className="row" style={{ gap: 8 }}>
         {["matching", "matched"].includes(r.status) && r.donors_confirmed > 0 && <Button className="sm" onClick={() => setAsk({ request: r, status: "fulfilled" })}>Mark fulfilled</Button>}
-        {["pending", "matching", "matched", "fulfilled", "cancelled"].includes(r.status) && <Button variant="ghost" className="sm" onClick={() => setAsk({ request: r, status: "cancelled" })}>Cancel</Button>}
+         {r.is_mine && r.donations_reported > 0 && <Button className="sm" onClick={() => setDonAsk(r)}>Confirm donation{r.donations_reported > 1 ? `s (${r.donations_reported})` : ""}</Button>}
+        {["pending", "matching", "matched"].includes(r.status) && <Button variant="ghost" className="sm" onClick={() => setAsk({ request: r, status: "cancelled" })}>Cancel</Button>}
       </span>
     ) }
   ];
@@ -74,13 +89,14 @@ export default function Requests() {
           <Field label="Hospital (optional)" as="select" value={f.hospital_id} onChange={set("hospital_id")} disabled={!!user.hospital_id}>
             <option value="">Not listed</option>{(hosp.data?.hospitals || []).map((h) => <option key={h.hospital_id} value={h.hospital_id}>{h.name}</option>)}
           </Field>
+          <div className="full"><GeoCapture value={geo} onChange={setGeo} /></div>
           <div className="full"><Button busy={busy} type="submit">Send request</Button></div>
         </form>
       </Card>
       <Card title="Your requests">
         <DataState loading={list.loading} error={list.error} onRetry={list.reload}>
           {(list.data?.requests || []).length === 0 ? <Empty title="No requests yet" text="Requests you post will be listed here with their match progress." /> : <>
-            <div style={{ maxWidth: 220, marginBottom: 12 }}><FilterSelect label="Status" value={filter} onChange={setFilter} options={["matching", "matched", "fulfilled", "cancelled"]} /></div>
+            <div style={{ maxWidth: 220, marginBottom: 12 }}><FilterSelect label="Status" value={filter} onChange={setFilter} options={["Pending", "matching", "matched", "fulfilled", "cancelled"]} /></div>
             {rows.length ? <Table columns={cols} rows={rows} rowKey="request_id" /> : <Empty title="Nothing matches this filter" text="" />}
           </>}
         </DataState>
@@ -90,6 +106,9 @@ export default function Requests() {
         text={ask?.status === "cancelled" ? "Donors who were asked or confirmed will be told it is cancelled." : "Use this once the blood has been received. Donors who have not answered yet will be told the request is closed."}
         confirmLabel={ask?.status === "cancelled" ? "Cancel request" : "Mark fulfilled"}
         onConfirm={close} onCancel={() => setAsk(null)} />
+      <Confirm open={!!donAsk} busy={closing} title="Confirm the donation?"
+        text="Confirm that the donor really gave blood for this request. This starts the donor's 56-day rest and tells them thank you."
+        confirmLabel="Yes, confirm" onConfirm={confirmDonation} onCancel={() => setDonAsk(null)} />
     </div>
   );
 }

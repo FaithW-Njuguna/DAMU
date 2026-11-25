@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api } from "../api";
 import { useAuth } from "../auth";
-import { Button, Card, Confirm, DataState, Empty, FilterSelect, FormAlert, PageHead, StatusBadge, Table, fmt, useFetch, useToast } from "../ui";
+import { Badge, Button, Card, Confirm, DataState, Empty, FilterSelect, FormAlert, PageHead, StatusBadge, Table, fmt, fmtDay, useFetch, useToast } from "../ui";
 
 const NEXT = { collected: [["received", "Mark received"]], received: [["used", "Mark used"]] };
 
@@ -27,17 +27,26 @@ export default function Hospital() {
   const setStatus = (u, status) => run(u.unit_id + status, () => api(`/units/${u.unit_id}/status`, { method: "PATCH", body: { status } }), `Unit marked ${status}`);
 
   const rows = (units.data?.units || []).filter((u) => filter === "all" || u.status === filter);
+    // Stock that is close to expiring stands out, and expired blood is unmistakable.
+  const expiryCell = (u) => {
+    if (["used", "flagged"].includes(u.status) || u.days_to_expiry == null) return fmtDay(u.expiry_date);
+    if (u.days_to_expiry < 0) return <Badge tone="bad">Expired {fmtDay(u.expiry_date)}</Badge>;
+    if (u.days_to_expiry <= 7) return <Badge tone="warn">{u.days_to_expiry === 0 ? "Expires today" : `${u.days_to_expiry} day${u.days_to_expiry > 1 ? "s" : ""} left`}</Badge>;
+    return fmtDay(u.expiry_date);
+  };
   const mcols = [
     { key: "tracking_code", label: "Donor tracking code", render: (m) => <span className="code">{m.tracking_code}</span> },
     { key: "blood_type", label: "Blood type" },
     { key: "location", label: "Requested at" },
     { key: "response_at", label: "Confirmed", render: (m) => fmt(m.response_at) },
-    { key: "act", label: "Action", render: (m) => <Button className="sm" busy={busy === m.match_id} onClick={() => collect(m)}>Log collection</Button> }
+    { key: "report", label: "Donation", render: (m) => m.donor_reported_at ? <Badge tone="ok">Donor reports donating {fmtDay(m.donation_date)}</Badge> : <span className="mute">Not reported yet</span> },
+    { key: "act", label: "Action", render: (m) => <Button className="sm" busy={busy === m.match_id} onClick={() => collect(m)}>{m.donor_reported_at ? "Confirm donation" : "Log collection"}</Button> }
   ];
   const ucols = [
     { key: "tracking_code", label: "Unit code", render: (u) => <span className="code">{u.tracking_code}</span> },
     { key: "status", label: "Status", render: (u) => <StatusBadge value={u.status} /> },
     { key: "collection_date", label: "Collected", render: (u) => fmt(u.collection_date).split(",").slice(0, 2).join(",") },
+    { key: "expiry_date", label: "Expires", render: expiryCell },
     { key: "act", label: "Action", render: (u) => (
       <span className="row" style={{ gap: 8 }}>
         {(NEXT[u.status] || []).map(([s, l]) => <Button key={s} className="sm" busy={busy === u.unit_id + s} onClick={() => setStatus(u, s)}>{l}</Button>)}

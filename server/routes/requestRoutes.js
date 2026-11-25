@@ -3,7 +3,8 @@ const express = require("express");
 const {
   createRequest,
   respondToMatch,
-  updateRequestStatus
+  updateRequestStatus,
+  confirmDonations
 } = require("../controllers/requestController");
 
 const {
@@ -32,6 +33,13 @@ router.patch(
   authenticateToken,
   authorizeRoles("patient", "hospital"),
   updateRequestStatus
+);
+
+router.post(
+  "/:request_id/confirm-donations",
+  authenticateToken,
+  authorizeRoles("patient", "hospital"),
+  confirmDonations
 );
 
 module.exports = router;

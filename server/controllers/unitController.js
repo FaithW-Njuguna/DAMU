@@ -1,11 +1,18 @@
 const pool = require("../config/db");
 const crypto = require("crypto");
 const { isUUID } = require("../utils/validate");
+const { notify } = require("../services/notificationService");
+const { startCooldown } = require("../services/donorService");
+
+// Whole blood is kept for 35 days after collection.
+const SHELF_LIFE_DAYS = 35;
 
 const fail = (res, status, message) => res.status(status).json({ message });
 
 // Hospital staff record that a confirmed donor's blood was collected.
 // The hospital always comes from the login token, never from the request body.
+// If the donor already reported donating, that date is used as the collection
+// date, which also fixes the date the blood expires.
 const createUnit = async (req, res) => {
   const { match_id } = req.body;
   const hospitalId = req.user.hospital_id;
@@ -24,10 +31,13 @@ const createUnit = async (req, res) => {
     await client.query("BEGIN");
 
     const matchResult = await client.query(
-      `SELECT m.match_id, m.status, m.donor_id,
-              r.hospital_id AS request_hospital_id
+      `SELECT m.match_id, m.status, m.donor_id, m.tracking_code,
+              to_char(COALESCE(m.donation_date, CURRENT_DATE), 'YYYY-MM-DD') AS collection_date,
+              r.hospital_id AS request_hospital_id,
+              d.user_id AS donor_user_id
        FROM matches m
        JOIN blood_requests r ON r.request_id = m.request_id
+       JOIN donors d ON d.donor_id = m.donor_id
        WHERE m.match_id = $1
        FOR UPDATE OF m`,
       [match_id]
@@ -52,10 +62,17 @@ const createUnit = async (req, res) => {
     const result = await client.query(
       `INSERT INTO blood_units
        (match_id, donor_id, hospital_id,
-        collection_date, status, tracking_code)
-       VALUES ($1, $2, $3, CURRENT_DATE, 'collected', $4)
+        collection_date, expiry_date, status, tracking_code)
+       VALUES ($1, $2, $3, $4::date, $4::date + $5::int, 'collected', $6)
        RETURNING *`,
-      [match_id, match.donor_id, hospitalId, trackingCode]
+      [
+        match_id,
+        match.donor_id,
+        hospitalId,
+        match.collection_date,
+        SHELF_LIFE_DAYS,
+        trackingCode
+      ]
     );
 
     await client.query(
@@ -68,6 +85,15 @@ const createUnit = async (req, res) => {
         req.user.user_id,
         "Unit collection recorded"
       ]
+    );
+
+    // The hospital confirming the donation starts the donor's 56-day rest.
+    await startCooldown(client, match.donor_id, match.collection_date);
+
+    await notify(
+      client,
+      match.donor_user_id,
+      `Thank you! Your donation was recorded. You can follow it with code ${match.tracking_code}.`
     );
 
     await client.query("COMMIT");
@@ -122,7 +148,10 @@ const updateUnitStatus = async (req, res) => {
     await client.query("BEGIN");
 
     const result = await client.query(
-      `SELECT * FROM blood_units
+      `SELECT *,
+              (expiry_date < CURRENT_DATE) AS is_expired,
+              to_char(expiry_date, 'YYYY-MM-DD') AS expiry_text
+       FROM blood_units
        WHERE unit_id = $1
        FOR UPDATE`,
       [unit_id]
@@ -144,6 +173,16 @@ const updateUnitStatus = async (req, res) => {
     if (!allowedTransitions[unit.status].includes(status)) {
       await client.query("ROLLBACK");
       return fail(res, 400, "Invalid status transition");
+    }
+
+    // Expired blood must never be received into stock or used. It can only be flagged.
+    if (unit.is_expired && status !== "flagged") {
+      await client.query("ROLLBACK");
+      return fail(
+        res,
+        400,
+        `This unit expired on ${unit.expiry_text} and must not be used. Flag it instead.`
+      );
     }
 
     await client.query(
@@ -182,7 +221,8 @@ const getUnitByTrackingCode = async (req, res) => {
     const { code } = req.params;
 
     const result = await pool.query(
-      `SELECT tracking_code, status, collection_date
+      `SELECT tracking_code, status, collection_date,
+              to_char(expiry_date, 'YYYY-MM-DD') AS expiry_date
        FROM blood_units
        WHERE tracking_code = $1
        OR match_id IN (SELECT match_id FROM matches WHERE tracking_code = $1)`,

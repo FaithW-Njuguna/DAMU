@@ -2,7 +2,9 @@ const express = require("express");
 
 const {
   createDonorProfile,
-  updateAvailability
+  updateAvailability,
+  updateLocation,
+  logDonation
 } = require("../controllers/donorController");
 
 const {
@@ -24,6 +26,20 @@ router.patch(
   authenticateToken,
   authorizeRoles("donor"),
   updateAvailability
+);
+
+router.patch(
+  "/location",
+  authenticateToken,
+  authorizeRoles("donor"),
+  updateLocation
+);
+
+router.post(
+  "/donations",
+  authenticateToken,
+  authorizeRoles("donor"),
+  logDonation
 );
 
 module.exports = router;
